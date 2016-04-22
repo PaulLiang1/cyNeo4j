@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.lang.StringBuilder;
 
 import nl.maastrichtuniversity.networklibrary.cyneo4j.internal.utils.CyUtils;
 import nl.maastrichtuniversity.networklibrary.cyneo4j.internal.utils.NeoUtils;
@@ -97,7 +98,6 @@ public class CypherResultParser {
 		}
 
 		Map<String,Object> nodeProps = (Map<String,Object>) node.get("data");
-		Map<String,Object> nodeMetas = (Map<String,Object>) node.get("metadata");
 
 		for(Entry<String,Object> obj : nodeProps.entrySet()){
 			if(defNodeTab.getColumn(obj.getKey()) == null){
@@ -112,15 +112,22 @@ public class CypherResultParser {
 			defNodeTab.getRow(cyNode.getSUID()).set(obj.getKey(), value);
 		}
 
-		for(Entry<String,Object)> obj : nodeMetas.entrySet()){
-			if(defNodeTab.getColumn(obj.getKey()) == null){
-				if(obj.getValue().getClass() == ArrayList.class){
-					defNodeTab.createListColumn(obj.getKey(), String.class, true);
-				} else {
-					defNodeTab.createColumn(obj.getKey(), obj.getValue().getClass(), true);
+		try{
+			Map<String,Object> nodeMetas = (Map<String,Object>) node.get("metadata");
+			List<String> labels = (List<String>) nodeMetas.get("labels");
+			for(int i = 0; i < labels.size(); ++i){
+				String labelValue = labels.get(i);
+				String labelColumnName = ((new StringBuilder()).append("neo_meta_label_").append(i).toString());
+
+				if(defNodeTab.getColumn(labelColumnName) == null){
+					defNodeTab.createColumn(labelColumnName, String.class, true);
 				}
+				defNodeTab.getRow(cyNode.getSUID()).set(
+					labelColumnName,
+					labelValue
+				);
 			}
-		}
+		}catch(NullPointerException e){};
 	}
 
 	public void parseEdge(Object edgeObj, String column){
