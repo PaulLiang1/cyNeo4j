@@ -58,7 +58,7 @@ public class CypherResultParser {
 				Object item = row.get(i);
 				String col = cols.get(i);
 				ResType type = duckTypeObject(item, col);
-				
+
 				switch(type){
 				case Node:
 					parseNode(item,col);
@@ -97,6 +97,7 @@ public class CypherResultParser {
 		}
 
 		Map<String,Object> nodeProps = (Map<String,Object>) node.get("data");
+		Map<String,Object> nodeMetas = (Map<String,Object>) node.get("metadata");
 
 		for(Entry<String,Object> obj : nodeProps.entrySet()){
 			if(defNodeTab.getColumn(obj.getKey()) == null){
@@ -109,6 +110,16 @@ public class CypherResultParser {
 
 			Object value = CyUtils.fixSpecialTypes(obj.getValue(), defNodeTab.getColumn(obj.getKey()).getType());
 			defNodeTab.getRow(cyNode.getSUID()).set(obj.getKey(), value);
+		}
+
+		for(Entry<String,Object)> obj : nodeMetas.entrySet()){
+			if(defNodeTab.getColumn(obj.getKey()) == null){
+				if(obj.getValue().getClass() == ArrayList.class){
+					defNodeTab.createListColumn(obj.getKey(), String.class, true);
+				} else {
+					defNodeTab.createColumn(obj.getKey(), obj.getValue().getClass(), true);
+				}
+			}
 		}
 	}
 
