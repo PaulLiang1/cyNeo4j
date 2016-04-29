@@ -38,7 +38,6 @@ public class CypherResultParser {
 		Map<String,Object> retVal = (Map<String,Object>)callRetValue;
 
 		readColumns((List<String>)retVal.get("columns"));
-
 		readResultTable((List<List<Object>>)retVal.get("data"));
 	}
 
@@ -50,7 +49,7 @@ public class CypherResultParser {
 	}
 
 	protected void readResultTable(List<List<Object>> rows){
-		//		for(List<Object> row : rows){
+
 		for(int r = 0; r < rows.size(); ++r){
 			List<Object> row = rows.get(r);
 
@@ -67,6 +66,10 @@ public class CypherResultParser {
 
 				case Edge:
 					parseEdge(item,col);
+					break;
+
+				case EdgeCollection:
+					parseEdgeCollection(item,col);
 					break;
 
 				default:
@@ -196,6 +199,13 @@ public class CypherResultParser {
 		}
 	}
 
+	public void parseEdgeCollection(Object edgeCollectionObj, String column){
+		List<Object> edgeCollection = (List<Object>) edgeCollectionObj;
+		for(Object edge: edgeCollection){
+			parseEdge(edge, column);
+		}
+	}
+
 	public long nodesAdded(){
 		return numNodes;
 	}
@@ -213,6 +223,8 @@ public class CypherResultParser {
 				result = ResType.Node;
 			} else if(isEdgeType(obj)){
 				result = ResType.Edge;
+			} else if(isEdgeCollectionType(obj)){
+				result = ResType.EdgeCollection;
 			} else { // this could / should be extended
 				result = ResType.Ignore;
 			}
@@ -242,9 +254,24 @@ public class CypherResultParser {
 		}
 	}
 
+	protected boolean isEdgeCollectionType(Object obj){
+		try{
+			List<Object> nodes = (List<Object>)obj;
+			for(Object node: nodes){
+				if(!isEdgeType(node)){
+					return false;
+				}
+			}
+			return true;
+		} catch(ClassCastException e){
+			return false;
+		}
+	}
+
 	protected enum ResType {
 		Node,
 		Edge,
+		EdgeCollection,
 		Ignore,
 		Unknown
 	}
